@@ -1,0 +1,272 @@
+Create table Customers (
+    customer_id text,
+    customer_unique_id Varchar(50),
+    customer_zip_code_prefix INT,
+    customer_city text,
+    customer_state text
+);
+
+Create table Geolocation (
+    geolocation_zip_code_prefix INT Primary key ,
+    geolocation_lat decimal(10,2),
+    geolocation_lng Decimal(10,2),
+    geolocation_city Text,
+    geolocation_state Text
+);
+Create table order_items (
+    order_id text,
+    order_item_id INT,
+    product_id text, 
+    seller_id Varchar(50),
+    shipping_limit_date TIMESTAMP,
+    price decimal(10,2),
+    freight_value decimal(10,2)
+);
+create table order_payments (
+    order_id text,
+    payment_sequential INT,
+    payment_type Varchar(50),
+    payment_installments INT,
+    payment_value decimal(10,2)
+);
+create table order_reviews(
+    review_id text,
+    order_id text,
+    review_score Int,
+    review_comment_title text,
+    review_comment_message text,
+    review_creation_date timestamp,
+    review_answer_timestamp timestamp
+);
+
+create table orders(
+    order_id text,
+    customer_id varchar(50),
+    order_status varchar(50),
+    order_purchase_timestamp timestamp,
+    order_approved_at timestamp,
+    order_delivered_carrier_date timestamp,
+    order_delivered_customer_date timestamp,
+    order_estimated_delivery_date timestamp
+);
+create table products(
+    product_id text,
+    product_category_name varchar(50),
+    product_name_lenght INT,
+    product_description_lenght INT,
+    product_photos_qty INT,
+    product_weight_g INT,
+    product_length_cm INT,
+    product_height_cm INT,
+    product_width_cm INT
+);
+
+create table sellers(
+    seller_id text,
+    seller_zip_code_prefix INT,
+    seller_city varchar(50),
+    seller_state varchar(50)
+);
+
+create table product_category_name(
+    product_category_name Varchar(50),
+    product_category_name_english varchar(50)
+);
+ALTER TABLE Customers
+ADD PRIMARY KEY (customer_id);
+
+Alter table order_items
+ADD foreign key (product_id) references products (product_id);
+
+ADD Primary key (order_item_id);
+Alter table order_items
+ADD foreign key (order_id) references orders (order_id);
+
+
+Alter table order_reviews
+ADD Primary Key (review_id);
+Alter table order_reviews
+ADD foreign key (order_id) references orders (order_id);
+
+Alter table orders
+ADD primary key (order_id);
+Alter table orders
+Add foreign key (customer_id) references Customers (customer_id);
+
+Alter table products
+Add primary key (product_id);
+
+Alter table sellers
+Add primary key(seller_id);
+
+Alter table order_payments
+Add foreign key (order_id) references orders (order_id);
+
+Alter table Customers OWNER To postgres
+Alter table Geolocation OWNER To postgres
+Alter table order_payments OWNER To postgres
+Alter table order_items OWNER To postgres
+Alter table order_reviews OWNER To postgres
+Alter table orders OWNER To postgres
+Alter table products OWNER To postgres
+Alter table sellers OWNER To postgres
+Alter table product_category_name OWNER To postgres
+
+Create Index idx_order_id ON order_items (order_id)
+Create Index idx_product_id ON order_items (product_id)
+Create Index idx_order_id2 ON order_reviews (order_id)
+Create Index idx_customer_id ON orders (customer_id)
+Create Index idx_order_id3 ON order_payments (order_id)
+
+select *
+from order_items
+
+copy Customers 
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_customers_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy Geolocation
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_geolocation_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy order_items
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_order_items_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+
+create table order_items (
+    order_id varchar(50),
+    order_item_id Int,
+    product_id VARCHAR(50),
+    seller_id VARCHAR(50),
+    shipping_limit_date TIMESTAMP,
+    price DECIMAL(10, 2),
+    freight_value DECIMAL(10, 2),
+    -- This sets BOTH columns as the unique primary key:
+    PRIMARY KEY (order_id, order_item_id)
+);
+select *
+from order_items
+
+copy orders
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_orders_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy order_payments
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_order_payments_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+ALTER TABLE order_reviews DROP CONSTRAINT order_reviews_pkey;
+
+copy order_reviews
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_order_reviews_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy products
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_products_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy sellers
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\olist_sellers_dataset.csv'
+DELIMITER ',' CSV HEADER;
+
+copy product_category_name
+from 'C:\Users\unick\Videos\SQL + Power Bi Project -1\csv.files\product_category_name_translation.csv'
+DELIMITER ',' CSV HEADER;
+
+select * 
+from order_items
+
+select sum(price)
+from order_items
+
+
+Create View Order_items_payment AS
+SELECT 
+    O.order_id,
+    O.price,
+    O.freight_value,
+    OP.payment_type,
+    OP.payment_value,
+    OP.payment_installments
+FROM order_items AS O
+LEFT JOIN order_payments AS OP
+    ON O.order_id = OP.order_id;
+
+select *
+from order_items_payment
+
+select 
+payment_type,
+TO_CHAR(sum(payment_value),'999,999,999') AS Total_Payments
+from order_items_payment
+group by payment_type
+
+select 
+payment_type,
+Avg(payment_installments) AS Average_installments
+from order_items_payment
+where payment_installments IS NOT NUll
+group by payment_type
+
+Update order_items_payment 
+
+select 
+* 
+from 
+order_payments
+where payment_sequential > 2
+
+select OTP.order_id,OP.order_id,
+OP.payment_sequential
+from Order_items_payment AS OTP
+left join order_payments AS OP on OTP.order_id = OP.order_id;
+
+SELECT 
+OP.payment_sequential,
+O.order_id,
+O.price,
+O.freight_value,
+OP.payment_type,
+OP.payment_value,
+OP.payment_installments
+FROM order_items AS O
+LEFT JOIN order_payments AS OP
+    ON O.order_id = OP.order_id;
+
+select 
+TO_CHAR(count(distinct order_id), '999,999,999')
+from order_items
+
+select 
+TO_CHAR(
+    (count(distinct order_id) * 100.0 )/ sum(count(Distinct o.order_id)) 
+    Over(), '999.00'
+    ) || '%' AS order_count ,
+product_category_name
+from order_items AS o
+Left Join products AS p on p.product_id = o.product_id
+where p.product_category_name is not null
+Group by product_category_name
+order by order_count desc
+Limit 10;
+
+select product_category_name,
+to_char(AVG(price), '999.00') AS average_price
+from order_items AS o
+Left Join products AS p on p.product_id = o.product_id
+where p.product_category_name is not null
+Group by product_category_name
+order by average_price desc;
+
+select product_category_name,
+to_char(sum(freight_value), '999.00') AS total_price
+from order_items AS o
+Left Join products AS p on p.product_id = o.product_id
+where p.product_category_name is not null
+Group by product_category_name
+order by total_price desc;
+
+select 
+
+

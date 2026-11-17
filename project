@@ -1,0 +1,2791 @@
+-- total order by product category--
+select count(distinct order_id) AS total_order, product_category_name_english
+from order_items AS o
+left join products AS p on p.product_id = o.product_id
+left join product_category_name AS pc ON pc.product_category_name = p.product_category_name
+group by product_category_name_english
+order by total_order desc ;
+,
+
+-- total order by top 10 and 20 product category in percentage %--
+with category_bypercentage AS 
+(select product_category_name,
+count(distinct order_id) AS total_order
+from order_items AS o
+join products AS p on p.product_id = o.product_id
+group by product_category_name ),
+top10_percentageselect AS (
+select total_order, product_category_name, round(total_order *100 / sum(total_order) over() ,2) AS percentage_bycategory
+from category_bypercentage
+where product_category_name IS NOT NULL
+order by percentage_bycategory desc
+limit 20)
+-- contribution of top 10 and 20 product_categories--
+select sum(percentage_bycategory) AS top_percentage
+from top10_percentageselect
+by_percent AS (
+-- total Revenue by top 10 and 20 product category in percentage %--
+with total_revenuebycategories AS (select 
+product_category_name,sum(price) AS total_revenue,
+round(sum(price)/count(distinct order_id),2) AS average_ordervalue
+from order_items AS oi
+left join products AS p ON p.product_id = oi.product_id
+where product_category_name IS not null
+group by product_category_name
+order by total_revenue desc)
+select product_category_name,total_revenue,round(total_revenue*100/sum(total_revenue) OVER(),2) AS totalreveue_percentage,
+average_ordervalue
+from total_revenuebycategories
+group by product_category_name, total_revenue, average_ordervalue
+order by totalreveue_percentage desc
+limit 20)
+select sum(total_payment_bypercentage)
+from by_percent
+
+
+    select count(distinct order_id)
+    from order_items
+
+select 
+ count(order_item_id)
+from order_items
+group by order_id, order_item_id
+order by order_item_id desc
+
+
+
+
+
+
+--total basketsize by orders--
+with basketsize_by AS
+ ( select order_id,
+ order_item_id
+from order_items
+group by order_id, order_item_id
+order by order_item_id desc),
+categories AS (
+select 
+order_id, order_item_id,
+CASE 
+when  order_item_id >= 18 then 'VeryHigh_Basketsize' 
+when  order_item_id between 9 AND 17  then 'high_basketsize'
+when order_item_id between 4 AND 8  then 'good_basketsize'
+when order_item_id = 3 then 'basketsize_3'
+when order_item_id = 2 then 'basketsize_is2'
+when order_item_id = 1 then 'singleor1_basketsize'
+ELSE 'zero_basketsize'
+END AS quantity
+from basketsize_by
+)
+select
+count(quantity) 
+filter (where quantity = 'VeryHigh_Basketsize') AS morethan_18items,
+count(quantity)
+filter (where quantity = 'high_basketsize')  AS morethan_12items,
+count(quantity)
+filter (where quantity = 'good_basketsize') AS morethan_8items,
+count(quantity)
+filter (where quantity = 'basketsize_3') AS  morethan_3,
+count(quantity)
+filter (where quantity = 'basketsize_is2') AS between2and3,
+count(quantity)
+filter (where quantity = 'singleor1_basketsize') AS ordershaving_1
+from categories
+
+select count(distinct order_id)
+from order_items
+
+
+-- average basket size by product category --
+select product_category_name, round(avg(order_item_id),2) AS average_basketsize
+from order_items AS oi
+left join products AS p ON p.product_id = oi.product_id
+where product_category_name IS NOT NULL
+group by product_category_name
+order by average_basketsize desc
+limit  20;
+-- AOV by product categories --
+select product_category_name, round(sum(price)/count(distinct order_id),2) AS average_ordervalue,
+count(DISTINCT order_id) AS total_orders
+from order_items AS oi
+left join products AS p ON p.product_id = oi.product_id
+where product_category_name IS NOT NULL
+group by product_category_name
+order by total_orders desc
+limit  20;
+
+-- Average AOV for product categories
+with avg_AOV AS (select round(sum(price)/count(distinct order_id),2) AS average_ordervalue
+from order_items)
+select round(AVG(average_ordervalue),2)
+from avg_AOV
+
+
+select AVG(order_item_id)
+from order_items
+
+-- total orders by seller --
+select Distinct seller_id,
+count(DIstinct order_id) AS total_orders
+from order_items
+group by Distinct seller_id
+order by total_orders desc 
+limit 100 ;
+
+
+-- total orders by categories--
+select 
+extract(Year from order_purchase_timestamp) AS year_date, product_category_name,
+CASE 
+when extract(Year from order_purchase_timestamp) = '2016' then 
+count(distinct o.order_id) AS total_order
+from order_items AS o
+join products AS p on p.product_id = o.product_id
+join orders AS od on o.order_id = od.order_id
+group by product_category_name, extract(Year from order_purchase_timestamp)  
+order by year_date ;
+
+-- total sales by year --
+select extract(year from order_purchase_timestamp) AS year,
+to_char(sum(price), '9999999999.00') AS toal_sales
+from orders AS o
+left join order_items AS ot ON ot.order_id = o.order_id
+group by extract(year from order_purchase_timestamp)
+order by year;
+
+-- average order value (AOV) --
+select round(sum(price)/count(distinct order_id),2) AS AOV, product_category_name
+from order_items AS ot 
+left join products as p on p.product_id = ot.product_id
+where product_category_name IS NOT NULL
+group by product_category_name
+order by AOV desc
+LIMIT 10 ;
+
+-- total freight value by categories --
+with non_nullvalues AS 
+(select 
+product_category_name, price,
+sum(freight_value) AS total_freight_value
+from order_items AS ot
+left join products as p on p.product_id = ot.product_id
+group by product_category_name,price)
+
+
+
+-- total freight --
+select to_char(sum(freight_value),'99,99,999.00') AS total_fv, sum(price) AS total_revenue
+from order_items
+
+select sum(price)
+from order_items
+
+-- AOV by freight value + revenue--
+select round(sum(price + freight_value)/count(distinct order_id),2) AS AOV, product_category_name
+from order_items AS ot 
+left join products as p on p.product_id = ot.product_id
+where product_category_name IS NOT NULL
+group by product_category_name
+order by AOV desc
+LIMIT 10 ;
+
+-- total of payment_type in % --
+with totalpayment_type AS 
+(select payment_type, round(sum(payment_value),2) AS total_paymentvalue
+from order_payments
+where payment_type IS NOT NULL
+group by payment_type)
+select payment_type,total_paymentvalue, round(sum(total_paymentvalue)*100/sum(total_paymentvalue) over(),2 ) AS per
+from totalpayment_type 
+group by  payment_type, total_paymentvalue
+order by total_paymentvalue, per desc
+
+select sum(payment_value)
+from order_payments
+where payment_installments > 1
+
+-- Average payments installments by payment type -- 
+select payment_type, round(Avg(payment_installments),2) AS installmets
+from order_payments
+group by payment_type
+
+
+
+-- Average payments of installments by product category --
+select product_category_name, round(Avg(payment_installments),2) AS installmets
+from order_payments AS op
+left join order_items AS oi ON oi.order_id = op.order_id
+left join products AS p ON p.product_id = oi.product_id
+group by product_category_name
+order by installmets desc
+limit  20 ;
+
+-- totalpayments value by payment type --
+with percentageof_orderpayment AS 
+(select payment_type, sum(payment_value) AS total_payment
+from order_payments
+group by payment_type)
+select payment_type, total_payment, round(total_payment*100/ sum(total_payment) Over(), 2) total_payment_bypercentage
+from percentageof_orderpayment
+group by payment_type, total_payment
+
+-- count of total payments done --
+select count(payment_value)
+from order_payments
+
+-- basket size by quantity
+WITH basketsize_by AS (
+    SELECT
+        order_id,
+        COUNT(*) AS basket_size
+    FROM order_items
+    GROUP BY order_id
+),
+
+basket_segments AS (
+    SELECT
+        CASE
+            WHEN basket_size >= 18 THEN 'VeryHigh_Basketsize'
+            WHEN basket_size BETWEEN 9 AND 17 THEN 'High_Basketsize'
+            WHEN basket_size BETWEEN 4 AND 8 THEN 'Good_Basketsize'
+            WHEN basket_size = 3 THEN 'BasketSize_3'
+            WHEN basket_size = 2 THEN 'BasketSize_2'
+            WHEN basket_size = 1 THEN 'Single_Item_Basket'
+        END AS basket_segment
+    FROM basketsize_by
+)
+
+SELECT
+    basket_segment,
+    COUNT(*) AS total_orders,
+    ROUND(
+        COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (),
+        2
+    ) AS order_percentage
+FROM basket_segments
+GROUP BY basket_segment
+ORDER BY
+    CASE basket_segment
+        WHEN 'Single_Item_Basket' THEN 1
+        WHEN 'BasketSize_2' THEN 2
+        WHEN 'BasketSize_3' THEN 3
+        WHEN 'Good_Basketsize' THEN 4
+        WHEN 'High_Basketsize' THEN 5
+        WHEN 'VeryHigh_Basketsize' THEN 6
+    END;
+
+-- top 20 product categories by average basket size --
+WITH basket_size AS (
+    SELECT
+        order_id,
+        COUNT(*) AS basket_size
+    FROM order_items
+    GROUP BY order_id
+),
+
+category_orders AS (
+    SELECT DISTINCT
+        oi.order_id,
+        p.product_category_name
+    FROM order_items oi
+    JOIN products p
+        ON oi.product_id = p.product_id
+    WHERE p.product_category_name IS NOT NULL
+)
+
+SELECT
+    co.product_category_name,
+    ROUND(AVG(bs.basket_size), 2) AS average_basket_size
+FROM category_orders co
+JOIN basket_size bs
+    ON co.order_id = bs.order_id
+GROUP BY co.product_category_name
+ORDER BY average_basket_size DESC
+LIMIT 20;
+
+-- total freight values and their percentage on revenue --
+with percentageby AS (select product_category_name_english, sum(price) AS total_revenue, sum(freight_value) AS total_freight
+from order_items oi 
+left join products AS p ON p.product_id = oi.product_id 
+left join product_category_name AS pcn ON pcn.product_category_name = p.product_category_name
+where product_category_name_english IS NOT NUll
+group by product_category_name_english),
+totalcontribution AS (
+select total_freight,total_freight*100/ sum(total_revenue) over() AS total
+from percentageby
+group by total_freight, total_revenue)
+select sum(total_freight)over(),round(sum(total) over(),2) AS percentaget
+from totalcontribution
+order by total_freight, percentaget
+limit 1
+
+with total_revenue AS (select product_category_name,sum(price)
+from order_items oi
+left join products AS p ON p.product_id = oi.product_id
+where product_category_name IS NOT NULL
+group by product_category_name)
+select sum(sum)
+from total_revenue
+
+
+
+-- percentage of freight value by product categories --
+with freightvalue AS (select product_category_name_english, round(sum(freight_value),2) AS total_freightvalue, 
+sum(price) AS total_revenue
+from order_items oi
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pc ON pc.product_category_name = p.product_category_name
+where product_category_name_english IS NOT NULL 
+group by product_category_name_english),
+percentagedifference AS (
+select product_category_name_english,total_freightvalue,round(sum(total_freightvalue*100)/sum(total_freightvalue)over(),2) AS per,
+total_revenue,round(sum(total_revenue*100)/sum(total_revenue) over(),2) AS totalrevenue_byper
+from freightvalue
+group by product_category_name_english,total_freightvalue,total_revenue
+order by per desc
+limit 20)
+select per - totalrevenue_byper
+from percentagedifference
+,
+percentageof_installments AS (
+--- freight coverage ratio --
+with freightvalue AS select product_category_name_english, round(sum(freight_value)*100/sum(price),2) AS total_freightvalue
+from order_items oi
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pc ON pc.product_category_name = p.product_category_name
+where product_category_name_english IS NOT NULL 
+group by product_category_name_english
+
+select max(payment_installments)
+from order_payments
+-- Installments records by segments of installments --
+with installments AS (select payment_installments AS payment_installments, count(*) AS payment_count
+from order_payments
+group by payment_installments
+),
+percentageof_installments AS (
+select payment_installments,payment_count,
+CASE
+when payment_installments >= 21 then 'morethan_20'
+when payment_installments between 15 AND 20 then 'between15to20'
+when payment_installments between 10 AND 14 then 'between10to14'
+when payment_installments between 4 AND 9 then 'between4to9'
+when payment_installments = 3 then 'totalinstallments_3'
+when payment_installments = 2 then 'totalinstallments_2'
+when payment_installments = 1 then 'totalinstallments_1'
+END AS Installments_numbers
+from installments
+group by payment_installments, payment_count )
+select Installments_numbers, sum(payment_count) AS tot ,
+round(sum(payment_count)*100/sum(sum(payment_count)) over(),2) AS per
+from percentageof_installments
+group by Installments_numbers
+order by tot desc;
+,
+-- Installments records by payment type --
+Create View installments_table AS 
+with installments AS (select payment_installments,payment_type, count(*) AS payment_count
+from order_payments
+group by payment_installments, payment_type
+),
+percentageof_installments AS (
+select payment_installments,payment_count,payment_type,
+CASE
+when payment_installments >= 21 then 'morethan_20'
+when payment_installments between 15 AND 20 then 'between15to20'
+when payment_installments between 10 AND 14 then 'between10to14'
+when payment_installments between 4 AND 9 then 'between4to9'
+when payment_installments = 3 then 'totalinstallments_3'
+when payment_installments = 2 then 'totalinstallments_2'
+when payment_installments = 1 then 'totalinstallments_1'
+END AS Installments_numbers
+from installments
+group by payment_installments, payment_count,payment_type )
+select Installments_numbers, sum(payment_count) AS tot ,
+sum(payment_count) 
+filter (where payment_type = 'credit_card') AS payment_creditcard ,
+sum(payment_count) 
+filter (where payment_type = 'voucher') AS payment_voucher ,
+sum(payment_count) 
+filter (where payment_type = 'debit_card') AS payment_debitcard ,
+sum(payment_count) 
+filter (where payment_type = 'boleto') AS payment_boleto ,
+sum(payment_count) 
+filter (where payment_type = 'not_defined') AS payment_notdefined
+from percentageof_installments
+group by Installments_numbers
+order by tot desc;
+
+select distinct order_id,count(payment_sequential) AS averagepayment_byorders
+from order_payments
+group by distinct order_id
+
+-- total payment_records of payment_sequential by percentage --
+with paymentsequential AS (
+SELECT
+    payment_sequential,
+    COUNT(*) AS payment_records
+FROM order_payments
+GROUP BY payment_sequential)
+select payment_sequential,payment_records, round(sum(payment_records)*100/sum(payment_records)over(),2) AS per
+from paymentsequential
+group by payment_sequential, payment_records
+
+select payment_type,sum(payment_installments)
+from order_payments
+group by payment_type
+,
+differenceby_lag AS (
+
+-- payment sequentiance by average payment and difference --
+with difference AS (
+select 
+payment_sequential, 
+round(avg(payment_value),2) AS average_paymentpaid,
+ROUND(SUM(payment_value), 2) AS total_payment_value
+from order_payments
+group by payment_sequential
+order by payment_sequential ASC)
+select payment_sequential,average_paymentpaid,total_payment_value,sum(average_paymentpaid) - LAG(average_paymentpaid,1) OVER(order by payment_sequential ) AS the_difference ,
+round((sum(average_paymentpaid) - LAG(average_paymentpaid,1) OVER(order by payment_sequential ))/(LAG(average_paymentpaid,1) OVER(order by payment_sequential)),2) * 100 AS difference_ofsequential
+from difference
+group by payment_sequential, average_paymentpaid, total_payment_value 
+
+select product_category_name, count(payment_installments) AS orders_count
+from order_payments op
+left join order_items ot ON ot.order_id = op.order_id
+left join products p ON p.product_id = ot.product_id
+where product_category_name IS NOT NULL
+group by product_category_name
+order by orders_count desc
+CASE
+when payment_installments >= 21 then 'morethan_20'
+when payment_installments between 15 AND 20 then 'between15to20'
+when payment_installments between 10 AND 14 then 'between10to14'
+when payment_installments between 4 AND 9 then 'between4to9'
+when payment_installments = 3 then 'totalinstallments_3'
+when payment_installments = 2 then 'totalinstallments_2'
+when payment_installments = 1 then 'totalinstallments_1'
+END AS Installments_numbers
+
+-- Average price of product categories --
+select product_category_name_english,
+round(avg(price),2) AS Avg_price 
+from order_items oi 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+Where product_category_name_english IS NOT NULL
+group by product_category_name_english
+order by Avg_price desc
+
+-- Total Rviews --
+select count(distinct review_id) AS total_reviews
+from order_reviews
+
+-- review ratings by product_categories and total reviews --
+with review_bycategory AS (
+select product_category_name_english , 
+round(avg(review_score),2) AS reviews,
+count(distinct review_id) AS total_reviews
+from order_reviews AS o
+left JOIN order_items AS ot ON ot.order_id = o.order_id
+left join products p ON p.product_id = ot.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+Where product_category_name_english IS NOT NULL
+group by product_category_name_english
+order by reviews desc )
+select product_category_name_english, 
+reviews, total_reviews,
+CASE
+WHEN reviews >= 4 then 'Good Ratings'
+WHEN reviews BETWEEN 3 AND 3.99 then 'Average'
+WHEN reviews < 3 then 'Bad ratings'
+END AS segment,
+CASE 
+WHEN total_reviews > 500 then 'High Confidence'
+WHEN total_reviews between 300 AND 500 then 'Good Confidence'
+WHEN total_reviews between 101 AND 299 then 'upper average confidence'
+WHEN total_reviews between 0 AND 100 then 'moderate to low Confidence'
+END AS segment_review_confidence
+from review_bycategory
+group by product_category_name_english, 
+reviews, total_reviews
+
+select 
+DISTINCT review_comment_title
+from order_reviews
+
+-- total time taken to complete the review --
+WITH review_time AS (select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+ extract(day from review_creation_date) AS review_creation_days,extract(day from review_answer_timestamp) AS review_answer_day,
+extract(hour from review_answer_timestamp) AS reviews_answer_hour
+from order_reviews )
+select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+round(((review_answer_day - review_creation_days)*24 + reviews_answer_hour)/24,2) AS total_timetaken
+from review_time 
+
+-- Average time taken by years --
+WITH review_time AS (select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+ extract(day from review_creation_date) AS review_creation_days,extract(day from review_answer_timestamp) AS review_answer_day,
+extract(hour from review_answer_timestamp) AS reviews_answer_hour
+from order_reviews ),
+timetaken AS (
+select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+round(((review_answer_day - review_creation_days)*24 + reviews_answer_hour)/24,2) AS total_timetaken
+from review_time )
+select DISTINCT extract(YEAR from review_creation_date)  AS review_creation_year,
+round(AVG(total_timetaken),2) AS average_timetaken
+from timetaken
+group by DISTINCT extract(YEAR from review_creation_date)
+
+-- min, max and percentile_count by average time taken to complete the review --
+WITH review_time AS (select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+ extract(day from review_creation_date) AS review_creation_days,extract(day from review_answer_timestamp) AS review_answer_day,
+extract(hour from review_answer_timestamp) AS reviews_answer_hour
+from order_reviews ),
+review_timetaken AS (
+select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+round(((review_answer_day - review_creation_days)*24 + reviews_answer_hour)/24,2) AS time_taken
+from review_time)
+SELECT
+MIN(time_taken),MAX(time_taken),
+PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY time_taken)
+FROM review_timetaken
+where NOT time_taken < 0
+
+-- time taken to complete the review by percentage --
+WITH review_time AS (select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+ extract(day from review_creation_date) AS review_creation_days,extract(day from review_answer_timestamp) AS review_answer_day,
+extract(hour from review_answer_timestamp) AS reviews_answer_hour
+from order_reviews ),
+review_timetaken AS (
+select DISTINCT review_id, review_creation_date, review_answer_timestamp,
+round(((review_answer_day - review_creation_days)*24 + reviews_answer_hour)/24,2) AS time_taken
+from review_time )
+SELECT 
+ROUND(
+        COUNT(*) FILTER (
+            WHERE time_taken >= 1
+        ) * 100.0 / COUNT(*),2) 
+        AS answered_withinlesserthan_1_day,
+ROUND(
+        COUNT(*) FILTER (
+            WHERE time_taken < 1
+            ) * 100.0 / COUNT(*),2)
+         AS between1to19days
+FROM review_timetaken
+WHERE not time_taken < 0;
+
+-- total order by order_status by percentage --
+with total_orders_byorderstatus AS 
+(select order_status, 
+count(order_id) AS total_orders 
+from orders 
+where order_status IS NOT NULL
+group by order_status)
+select order_status,total_orders,
+round(sum(total_orders)*100/sum(total_orders) over(),2) AS total_order_percentage
+from total_orders_byorderstatus
+group by order_status, total_orders
+order by total_orders desc
+
+select Distinct order_status
+from orders 
+-- Order status by product categories --
+WITH totalorder_byproductcategory AS (
+select product_category_name_english ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'delivered') AS delivered ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'shipped') AS Shipped ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'invoiced') AS Invoiced ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'processing') AS Processing ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'created') AS Created ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'approved') AS Approved ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'canceled') AS Canceled ,
+count(DISTINCT o.order_id)
+filter( where order_status = 'unavailable') AS Unavailable 
+from orders o
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english 
+order by delivered desc, shipped desc, invoiced desc, processing desc, created desc, approved desc, canceled desc, unavailable desc
+)
+-- Order status by product categories by percentage--
+select product_category_name_english,
+round(sum(delivered)*100/NULLIF(sum(delivered) OVER(),0),2) AS delivered_per ,
+round(sum(shipped)*100/NULLIF(sum(shipped) OVER(),0),2) AS shipped_per ,
+round(sum(invoiced)*100/NULLIF(sum(invoiced) OVER(),0),2) AS invoiced_per,
+round(sum(processing)*100/NULLIF(sum(processing) OVER(),0),2) AS processing_per,
+round(sum(created)*100/NULLIF(sum(created) OVER(),0),2) AS created_per ,
+round(sum(approved)*100/NULLIF(sum(approved) OVER(),0),2) AS approved_per ,
+round(sum(canceled)*100/NULLIF(sum(canceled) OVER(),0),2) AS canceled_per ,
+round(sum(unavailable)*100/NULLIF(sum(unavailable) OVER(),0),2) AS unavailable_per 
+from totalorder_byproductcategory
+group by product_category_name_english, delivered,shipped,invoiced,processing,created,approved,canceled,unavailable
+order by delivered desc, shipped desc, invoiced desc, processing desc, created desc, approved desc, canceled desc, unavailable desc
+
+SELECT COUNT(*) AS orders_50_plus_hours
+FROM orders
+WHERE order_approved_at IS NOT NULL
+  AND EXTRACT(
+        EPOCH FROM (
+            order_approved_at - order_purchase_timestamp
+        )
+      ) / 3600 >= 50;
+
+
+
+
+
+-- average of time taken to approve the order after being purchased product_category --
+
+with t AS ( 
+    select DISTINCT o.order_id,product_category_name_english, customer_state, 
+ Extract ( EPOCH from 
+ (order_approved_at - order_purchase_timestamp))/3600
+ AS timetaken_inapprovingtheorder
+FROM orders o
+left join Customers c ON c.customer_id = o.customer_id
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+where order_approved_at IS NOT NUll
+group by o.order_id,product_category_name_english, customer_state
+order by timetaken_inapprovingtheorder  desc)
+select product_category_name_english, customer_state,round(avg(timetaken_inapprovingtheorder),2),
+COUNT(DISTINCT order_id) AS total_orders
+from t 
+where timetaken_inapprovingtheorder > 24
+group by product_category_name_english, customer_state
+
+-- total order who took more than 24 hours in approval by states -- 
+with t AS (
+select DISTINCT o.order_id, oi.order_item_id ,c.customer_state,
+Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600
+ AS timetaken_inapprovingtheorder
+from orders AS o
+left join Customers c ON c.customer_id = o.customer_id
+left join order_items oi ON oi.order_id = o.order_id
+where o.order_approved_at IS NOT NULL
+ )
+select customer_state,round(avg(order_item_id),2) AS avg_basketsize,count(Distinct order_id) AS total_orders,
+count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 ) AS timetaken_morethan24 ,
+round(count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 )*100.0/ count(Distinct order_id),2) AS timetakenpercent_morethan24
+from t 
+group by customer_state
+ORDER BY timetakenpercent_morethan24 DESC
+
+-- total order who took more than 24 hours in approval by states -- 
+with t AS (
+select DISTINCT o.order_id ,oi.order_item_id,product_category_name_english,
+Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600
+ AS timetaken_inapprovingtheorder
+from orders AS o
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+left join Customers c ON c.customer_id = o.customer_id
+where o.order_approved_at IS NOT NULL
+ )
+select product_category_name_english,round(avg(order_item_id),2) AS avg_basketsize,count(Distinct order_id) AS total_orders,
+count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 ) AS timetaken_morethan24 ,
+round(count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 )*100.0/ count(Distinct order_id),2) AS timetakenpercent_morethan24
+from t 
+group by product_category_name_english
+ORDER BY timetakenpercent_morethan24 DESC, avg_basketsize desc
+
+--- Average time taken to approve the order by payment_type if more than 24 hours --
+select payment_type, round(AVG(payment_value),2) AS avg_transaction,
+ count(Distinct o.order_id)
+filter (where (Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600)  > 24 )
+ AS total_orders_morethan24hours,
+ AVG(
+    EXTRACT(
+        EPOCH FROM (
+            o.order_approved_at - o.order_purchase_timestamp
+        )
+    ) / 3600
+) FILTER (
+    WHERE o.order_approved_at - o.order_purchase_timestamp
+          > INTERVAL '24 hours' ) AS avg_approval_time_over_24h
+from orders o 
+left join order_payments op ON op.order_id = o.order_id
+where o.order_approved_at IS NOT NULL 
+AND o.order_purchase_timestamp IS NOT NULL 
+group by payment_type
+
+--- Average time taken to approve the order by payment_type --
+select payment_type,
+ round(AVG(payment_value),2) AS avg_transaction,
+ count(Distinct o.order_id)
+filter (where (Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600 < 2000 ))
+ AS timetaken_morethan24hours,
+ AVG (Extract ( 
+ EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp
+ )
+ ))/3600 AS timetaken_inapprovingtheorder
+from orders o 
+left join order_payments op ON op.order_id = o.order_id
+where o.order_approved_at IS NOT NULL 
+AND o.order_purchase_timestamp IS NOT NULL 
+group by payment_type
+
+select customer_state ,sum(total_orders) AS c
+from segment_productapproval
+group by customer_state
+order by c desc
+
+select product_category_name_english ,sum(total_orders) AS c
+from segment_productapproval
+group by product_category_name_english
+order by c desc
+
+-- Average timetaken by basket size and differences --
+WITH y AS (
+select order_item_id , 
+count(Distinct o.order_id)
+filter (where (Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600 < 2000 ))
+ AS total_orders ,
+  AVG (Extract ( 
+ EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp
+ )
+ ))/3600 AS timetaken_inapprovingtheorder
+ from orders o
+ left join order_items oi ON oi.order_id = o.order_id
+ group by order_item_id)
+select order_item_id, sum(total_orders), sum(timetaken_inapprovingtheorder),
+timetaken_inapprovingtheorder - lag(timetaken_inapprovingtheorder) over() AS differences
+from y 
+group by order_item_id, timetaken_inapprovingtheorder
+
+SELECT
+    c.customer_city,
+    count(Distinct o.order_id) filter (where (Extract ( EPOCH from  (o.order_approved_at - o.order_purchase_timestamp))/3600 > 24 ))
+    ,
+
+    AVG(
+        EXTRACT(
+            EPOCH FROM (
+                o.order_approved_at - o.order_purchase_timestamp
+            )
+        ) / 3600
+    ) FILTER (
+        WHERE op.payment_type = 'boleto'
+          AND o.order_approved_at - o.order_purchase_timestamp
+              > INTERVAL '24 hours'
+    ) AS boleto_avg_hours,
+
+    AVG(
+        EXTRACT(
+            EPOCH FROM (
+                o.order_approved_at - o.order_purchase_timestamp
+            )
+        ) / 3600
+    ) FILTER (
+        WHERE op.payment_type = 'credit_card'
+          AND o.order_approved_at - o.order_purchase_timestamp
+              > INTERVAL '24 hours'
+    ) AS credit_card_avg_hours,
+
+    AVG(
+        EXTRACT(
+            EPOCH FROM (
+                o.order_approved_at - o.order_purchase_timestamp
+            )
+        ) / 3600
+    ) FILTER (
+        WHERE op.payment_type = 'debit_card'
+          AND o.order_approved_at - o.order_purchase_timestamp
+              > INTERVAL '24 hours'
+    ) AS debit_card_avg_hours,
+
+    AVG(
+        EXTRACT(
+            EPOCH FROM (
+                o.order_approved_at - o.order_purchase_timestamp
+            )
+        ) / 3600
+    ) FILTER (
+        WHERE op.payment_type = 'voucher'
+          AND o.order_approved_at - o.order_purchase_timestamp
+              > INTERVAL '24 hours'
+    ) AS voucher_avg_hours
+
+FROM orders o
+LEFT JOIN order_payments op
+    ON op.order_id = o.order_id
+LEFT JOIN customers c
+    ON c.customer_id = o.customer_id
+
+GROUP BY c.customer_city;
+
+select customer_city
+from customers
+
+-- total order who took more than 24 hours in approval by states by seller_state -- 
+with t AS (
+select DISTINCT o.order_id, oi.order_item_id ,s.seller_state,
+Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600
+ AS timetaken_inapprovingtheorder
+from orders AS o
+left join order_items oi ON oi.order_id = o.order_id
+left join sellers s ON s.seller_id = oi.seller_id
+where o.order_approved_at IS NOT NULL
+ )
+select seller_state,round(avg(order_item_id),2) AS avg_basketsize,count(Distinct order_id) AS total_orders,
+avg(timetaken_inapprovingtheorder),
+count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 ) AS timetaken_morethan24 ,
+round(count(Distinct order_id)
+filter (where timetaken_inapprovingtheorder > 24 )*100.0/ count(Distinct order_id),2) AS timetakenpercent_morethan24
+from t 
+group by seller_state
+ORDER BY timetakenpercent_morethan24 DESC
+
+-- total order who took more than 24 hours in approval by states by seller_id -- 
+select s.seller_id, count(distinct o.order_id),
+count(Distinct o.order_id)
+filter (where Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600 > 24 )*100.0/
+ count(distinct o.order_id) AS per ,
+count(Distinct o.order_id)
+filter (where Extract ( EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp))/3600 > 24 )
+AS timetaken_morethan24,
+AVG (Extract ( 
+ EPOCH from 
+ (o.order_approved_at - o.order_purchase_timestamp
+ )
+ )/3600 )
+filter (where 
+ o.order_approved_at - o.order_purchase_timestamp > INTERVAL '24 hours' )
+ AS avgtimetaken_inapprovingtheorder
+ from orders o
+left join order_items oi ON oi.order_id = o.order_id
+left join sellers s ON s.seller_id = oi.seller_id
+group by s.seller_id
+
+HAVING 
+    COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE o.order_approved_at - o.order_purchase_timestamp
+                  > INTERVAL '24 hours'
+        ) > 0
+
+    AND AVG(
+        EXTRACT(
+            EPOCH FROM (
+                o.order_approved_at - o.order_purchase_timestamp
+            )
+        ) / 3600
+    ) FILTER (
+        WHERE o.order_approved_at - o.order_purchase_timestamp
+              > INTERVAL '24 hours'
+    ) > 0
+order by per desc;
+
+
+
+ ### -- Segments for timetaken to approve the order after being purchased --
+with timetaken AS (
+select Distinct order_id,
+Extract ( EPOCH from 
+ (order_approved_at - order_purchase_timestamp))/3600
+ AS timetaken_inapprovingtheorder
+ from orders
+  ), timetaken2 AS (
+select 
+CASE 
+when timetaken_inapprovingtheorder >= 50  then 'veryhigh_timetaken50'
+when timetaken_inapprovingtheorder >=25 then 'higher_time_25to49'
+when timetaken_inapprovingtheorder >=10  then 'average_time_10to24'
+when timetaken_inapprovingtheorder >=5  then 'loweraverage_time_5to9'
+when timetaken_inapprovingtheorder >=0  then 'lower_time_0to4'
+END AS segment_bytimetaken , 
+count(*) AS total_orders,
+round(count(*)*100.0/sum(count(*)) over(),2) AS percentage_orders
+from timetaken
+group by segment_bytimetaken )
+select segment_bytimetaken,total_orders, percentage_orders
+from timetaken2
+group by segment_bytimetaken, total_orders, percentage_orders
+
+#### -- average of days it taken to deliver at carrier product_category --
+    SELECT
+    pcn.product_category_name_english,
+    c.customer_state,
+
+    COUNT(DISTINCT o.order_id) AS total_orders,
+
+    COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                    o.order_delivered_carrier_date
+                    - o.order_approved_at
+                )
+            ) / 86400 > 10
+        ) AS orders_tookmorethan10days,
+
+    ROUND(
+        100.0 *
+        COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                    o.order_delivered_carrier_date
+                    - o.order_approved_at
+                )
+            ) / 86400 > 10
+        )
+        / NULLIF(COUNT(DISTINCT o.order_id), 0),
+        2
+    ) AS percent_over10days,
+
+    ROUND(
+        AVG(
+            EXTRACT(
+                EPOCH FROM (
+                    o.order_delivered_carrier_date
+                    - o.order_approved_at
+                )
+            ) / 86400
+        ),
+        2
+    ) AS avg_time_to_carrier_days
+FROM orders o
+JOIN order_items oi
+    ON o.order_id = oi.order_id
+left JOIN products p
+    ON oi.product_id = p.product_id
+JOIN customers c
+    ON o.customer_id = c.customer_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+WHERE
+    o.order_approved_at IS NOT NULL
+    AND o.order_delivered_carrier_date IS NOT NULL
+    AND pcn.product_category_name_english IS NOT NULL
+GROUP BY
+    pcn.product_category_name_english,
+    c.customer_state
+order by percent_over10days desc
+
+
+-- Segments for timetaken to deliver the order after approve --
+with timetaken AS (
+select Distinct order_id,
+Extract ( EPOCH from 
+ (order_delivered_carrier_date - order_approved_at))/86400
+ AS timetaken_todeliveratcarrier_days
+ from orders
+  ), timetaken2 AS (
+select 
+CASE 
+when timetaken_todeliveratcarrier_days >=25 then 'higher_time_25to49'
+when timetaken_todeliveratcarrier_days >=10  then 'average_time_10to24'
+when timetaken_todeliveratcarrier_days >=5  then 'loweraverage_time_5to9'
+when timetaken_todeliveratcarrier_days >=0  then 'lower_time_0to4'
+END AS segment_bytimetaken ,
+count(*) AS total_orders,
+round(count(*)*100.0/sum(count(*)) over(),2) AS percentage_orders
+from timetaken
+group by segment_bytimetaken )
+select segment_bytimetaken,total_orders, percentage_orders
+from timetaken2
+group by segment_bytimetaken, total_orders, percentage_orders
+
+
+-- average of time taken to deliver at customer product_category --
+SELECT
+    pcn.product_category_name_english,
+    c.customer_state,
+
+    COUNT(DISTINCT o.order_id) AS total_orders,
+
+    COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                    order_delivered_customer_date - order_delivered_carrier_date
+                )
+            ) / 86400 > 20
+        ) AS orders_tookmorethan20days,
+
+    ROUND(
+        100.0 *
+        COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                   order_delivered_customer_date - order_delivered_carrier_date
+                )
+            ) / 86400 > 20
+        )
+        / NULLIF(COUNT(DISTINCT o.order_id), 0),
+        2
+    ) AS percent_over20days,
+
+    ROUND(
+        AVG(
+            EXTRACT(
+                EPOCH FROM (
+                order_delivered_customer_date - order_delivered_carrier_date
+                )
+            ) / 86400
+        ),
+        2
+    ) AS avg_time_to_customers_days
+FROM orders o
+JOIN order_items oi
+    ON o.order_id = oi.order_id
+left JOIN products p
+    ON oi.product_id = p.product_id
+JOIN customers c
+    ON o.customer_id = c.customer_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+WHERE
+    o.order_approved_at IS NOT NULL
+    AND o.order_delivered_carrier_date IS NOT NULL
+    AND pcn.product_category_name_english IS NOT NULL
+GROUP BY
+    pcn.product_category_name_english,
+    c.customer_state
+order by avg_time_to_customers_days desc
+
+select AVG(
+            EXTRACT(
+                EPOCH FROM (
+                order_delivered_customer_date - order_delivered_carrier_date
+                )
+            ) / 86400)
+from orders
+
+with t AS (
+select DISTINCT o.order_id, oi.order_item_id ,
+s.seller_state,product_category_name_english,
+Extract ( EPOCH from 
+ (o.order_delivered_customer_date - o.order_delivered_carrier_date))/86400
+ AS timetaken_delivertocustomer
+from orders AS o
+left join order_items oi ON oi.order_id = o.order_id
+left join sellers s ON s.seller_id = oi.seller_id
+left JOIN products p
+    ON oi.product_id = p.product_id
+left JOIN customers c
+    ON o.customer_id = c.customer_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+where o.order_approved_at IS NOT NULL
+ )
+select seller_state,product_category_name_english,
+round(avg(order_item_id),2) AS avg_basketsize,count(Distinct order_id) AS total_orders,
+avg(timetaken_delivertocustomer),
+count(Distinct order_id)
+filter (where timetaken_delivertocustomer > 10 ) AS timetaken_morethan10 ,
+round(count(Distinct order_id)
+filter (where timetaken_delivertocustomer > 10 )*100.0/ count(Distinct order_id),2) AS timetakenpercent_morethan10
+from t 
+group by seller_state,product_category_name_english
+ORDER BY timetakenpercent_morethan10 DESC
+
+-- Segments for timetaken to deliver the order to customer --
+with timetaken AS (
+select Distinct order_id,
+Extract ( EPOCH from 
+ (order_delivered_customer_date - order_delivered_carrier_date))/86400
+ AS timetaken_todelivercustomer_days
+ from orders
+  ), timetaken2 AS (
+select 
+CASE 
+when timetaken_todelivercustomer_days >=50 then 'veryhigher_time_above50'
+when timetaken_todelivercustomer_days >=25 then 'higher_time_25to49'
+when timetaken_todelivercustomer_days >=10  then 'average_time_10to24'
+when timetaken_todelivercustomer_days >=5  then 'loweraverage_time_5to9'
+when timetaken_todelivercustomer_days >=0  then 'lower_time_0to4'
+when timetaken_todelivercustomer_days < 0  then 'lower_thanzero'
+END AS segment_bytimetaken ,
+count(*) AS total_orders,
+round(count(*)*100.0/sum(count(*)) over(),2) AS percentage_orders
+from timetaken
+group by segment_bytimetaken )
+select segment_bytimetaken,total_orders, percentage_orders
+from timetaken2
+group by segment_bytimetaken, total_orders, percentage_orders
+
+-- Estimated vs Real average time taken to deliver the order --
+     with t AS ( 
+    select DISTINCT o.order_id,product_category_name_english, customer_state,
+ Extract ( EPOCH from 
+ (order_delivered_customer_date - order_estimated_delivery_date))/86400
+ AS estimatedvsactual_deliverydays
+FROM orders o
+left join Customers c ON c.customer_id = o.customer_id
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+where order_approved_at IS NOT NUll
+group by o.order_id,product_category_name_english, customer_state
+order by estimatedvsactual_deliverydays  desc)
+select product_category_name_english, customer_state, 
+round(avg(estimatedvsactual_deliverydays),2) AS late_timeindays
+, COUNT(DISTINCT order_id) AS total_orders,
+count(DISTINCT order_id)
+filter(where estimatedvsactual_deliverydays > 0 ) AS total_late_oders 
+from t 
+where estimatedvsactual_deliverydays > 0
+group by product_category_name_english, customer_state
+
+-- segment for Estimated vs Real average time taken to deliver the order --
+with timetaken AS (
+select Distinct order_id,
+Extract ( EPOCH from 
+ (order_delivered_customer_date - order_estimated_delivery_date))/86400
+ AS estimatedvsactual_deliverydays
+ from orders
+  ), timetaken2 AS (
+select 
+CASE 
+when estimatedvsactual_deliverydays >=50 then 'morethan_50_days'
+when estimatedvsactual_deliverydays >=25 then 'morethan_24_days'
+when estimatedvsactual_deliverydays >=10  then 'between_10to24'
+when estimatedvsactual_deliverydays >=5  then 'between_5to9'
+when estimatedvsactual_deliverydays >=0  then 'between_0to4'
+when estimatedvsactual_deliverydays < 0  then 'lower_thanzero'
+END AS segment_bytimetaken ,
+count(*) AS total_orders,
+round(count(*)*100.0/sum(count(*)) over(),2) AS percentage_orders
+from timetaken
+group by segment_bytimetaken )
+select segment_bytimetaken,total_orders, percentage_orders
+from timetaken2
+group by segment_bytimetaken, total_orders, percentage_orders
+
+SELECT
+    order_status,
+    COUNT(*) AS total_orders
+FROM orders
+WHERE order_delivered_customer_date IS NULL
+   OR order_estimated_delivery_date IS NULL
+GROUP BY order_status
+ORDER BY total_orders DESC;
+
+
+select Distinct *
+from Customers
+
+-- AVG of total time taken to deliver -- 
+WITH timetaken AS 
+(SELECT
+    DISTINCT customer_state,product_category_name_english,
+  order_delivered_customer_date - order_delivered_carrier_date AS timetaken_delivercustomer,
+    round(EXTRACT(
+        EPOCH FROM (order_delivered_customer_date - order_purchase_timestamp )
+    ) / 86400,2) AS total_timetaken_days
+FROM orders o
+left join Customers c ON c.customer_id = o.customer_id 
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+)
+select customer_state,product_category_name_english, round(avg(total_timetaken_days),2) AS avgtimetaken_todeliver__days
+from timetaken
+group by customer_state,product_category_name_english
+order by avgtimetaken_todeliver__days desc
+
+-- Segment of average time taken for product category x customer_state ---
+WITH x AS (
+    SELECT
+        pcn.product_category_name_english,
+        c.customer_state,
+            AVG(
+            EXTRACT(
+                EPOCH FROM (
+                    order_delivered_customer_date - order_purchase_timestamp
+                )
+            ) / 86400
+        ) AS avg_delivery_days
+FROM orders o
+    JOIN order_items oi
+        ON o.order_id = oi.order_id
+    JOIN products p
+        ON oi.product_id = p.product_id
+    JOIN product_category_name pcn
+    ON p.product_category_name = pcn.product_category_name
+    JOIN customers c
+        ON o.customer_id = c.customer_id
+    
+WHERE o.order_delivered_customer_date IS NOT NULL
+      AND o.order_delivered_carrier_date IS NOT NULL
+GROUP BY
+        pcn.product_category_name_english,
+        c.customer_state
+), 
+y AS (
+    SELECT
+        *,
+        AVG(avg_delivery_days) OVER () AS overall_avg
+    FROM x
+)SELECT
+    product_category_name_english,
+    customer_state,
+    ROUND(avg_delivery_days, 2) AS avg_delivery_days,
+CASE
+        WHEN avg_delivery_days IS NULL
+            THEN 'not_measurable'
+        WHEN avg_delivery_days > overall_avg + 2
+            THEN 'high'
+        WHEN avg_delivery_days < overall_avg - 2
+            THEN 'lower_than_average'
+        ELSE 'near_average'
+    END AS delivery_segment
+
+FROM y
+ORDER BY avg_delivery_days DESC;
+
+
+select order_status, count(Distinct order_id),
+round(AVG (EXTRACT(
+        EPOCH FROM (order_delivered_customer_date - order_purchase_timestamp ))
+    )/86400,2) AS actual_vs_estimated
+from orders
+group by order_status
+
+-- percentage of orders got cancelled from total orders --
+WITH timetaken AS 
+(SELECT
+    DISTINCT customer_state, product_category_name_english, 
+    count(distinct o.order_id) AS count_of_orders,
+    count(distinct o.order_id)
+    filter (where order_status = 'canceled') AS orders_cancelled
+FROM orders o
+left join Customers c ON c.customer_id = o.customer_id 
+left join order_items oi ON oi.order_id = o.order_id 
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by customer_state,product_category_name_english
+order by count_of_orders desc
+)
+select customer_state, product_category_name_english
+,count_of_orders, orders_cancelled, round(sum(orders_cancelled)* 100/ sum(count_of_orders),2)
+from timetaken
+group by customer_state,count_of_orders, orders_cancelled, product_category_name_english
+order by count_of_orders desc
+
+
+-- Average of total time taken to deliver the order  --
+SELECT
+    DISTINCT s.seller_id,s.seller_state,
+    pcn.product_category_name_english,
+     COUNT(DISTINCT o.order_id) AS total_orders,
+     COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                    o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 10
+        ) AS orders_tookmorethan20days,
+
+    ROUND(
+        100.0 *
+        COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                   o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 10
+        )
+        / NULLIF(COUNT(DISTINCT o.order_id), 0),
+        2
+    ) AS percent_over10days,
+
+    ROUND(
+        AVG(
+            EXTRACT(
+                EPOCH FROM (
+                o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400
+        ),
+        2
+    ) AS avg_time_to_customers_days
+FROM orders o
+JOIN order_items oi
+    ON o.order_id = oi.order_id
+left join sellers s
+     ON s.seller_id = oi.seller_id
+left JOIN products p
+    ON oi.product_id = p.product_id
+JOIN customers c
+    ON o.customer_id = c.customer_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+WHERE
+    o.order_approved_at IS NOT NULL
+    AND o.order_delivered_carrier_date IS NOT NULL
+    AND pcn.product_category_name_english IS NOT NULL
+GROUP BY
+    pcn.product_category_name_english,
+   s.seller_id,s.seller_state
+order by avg_time_to_customers_days desc
+
+-- Average of total time taken to deliver the order  --
+SELECT
+    pcn.product_category_name_english,
+    c.customer_state,
+
+    COUNT(DISTINCT o.order_id) AS total_orders,
+
+    COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                    o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 10
+        ) AS orders_tookmorethan20days,
+
+    ROUND(
+        100.0 *
+        COUNT(DISTINCT o.order_id)
+        FILTER (
+            WHERE EXTRACT(
+                EPOCH FROM (
+                   o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 10
+        )
+        / NULLIF(COUNT(DISTINCT o.order_id), 0),
+        2
+    ) AS percent_over10days,
+
+    ROUND(
+        AVG(
+            EXTRACT(
+                EPOCH FROM (
+                o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400
+        ),
+        2
+    ) AS avg_time_to_customers_days
+FROM orders o
+JOIN order_items oi
+    ON o.order_id = oi.order_id
+left JOIN products p
+    ON oi.product_id = p.product_id
+JOIN customers c
+    ON o.customer_id = c.customer_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+WHERE
+    o.order_approved_at IS NOT NULL
+    AND o.order_delivered_carrier_date IS NOT NULL
+    AND pcn.product_category_name_english IS NOT NULL
+GROUP BY
+    pcn.product_category_name_english,
+    c.customer_state
+order by avg_time_to_customers_days desc
+
+-- Review score of  time taken more than average of 12.5 to deliver the order --
+select product_category_name_english,
+avg(review_score) AS avg_reviewscore,
+avg(review_score)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) AS avg_timetaken_reviews,
+count(Distinct o.order_id) AS total_orders,
+count(Distinct o.order_id)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) AS totalorder_timetakenmorethan20,
+avg(review_score) -
+avg(review_score)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) AS differencein_timetaken_reviews,
+AVG(EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400
+)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) AS Avg_timetaken_morethan125 , 
+AVG(EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 ) AS Avg_timetaken_todeliver
+from orders o
+left Join order_payments op
+    ON op.order_id = o.order_id
+left Join order_reviews ov
+    ON ov.order_id = o.order_id
+left join order_items oi
+    ON oi.order_id = o.order_id
+left JOIN products p
+    ON p.product_id = oi.product_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english
+
+-- Average review score which took more time than average to deliver the order--
+select product_category_name_english, 
+avg(review_score)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) - avg(review_score) AS differencein_timetaken_reviews,
+count(Distinct o.order_id)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+)*100.0/ count(Distinct o.order_id) AS percenof_order_tookmorethan_avg,
+AVG(EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400
+)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5
+) AS Avg_timetaken_morethan125
+from orders o
+left Join order_payments op
+    ON op.order_id = o.order_id
+left Join order_reviews ov
+    ON ov.order_id = o.order_id
+left join order_items oi
+    ON oi.order_id = o.order_id
+left JOIN products p
+    ON p.product_id = oi.product_id
+left join product_category_name pcn
+ ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english
+
+-- MIN and Max of the average of product length,height and weight --
+with x AS (
+select pcn.product_category_name_english,
+round(avg(product_name_lenght),2) AS avg_product_name_length,
+round(avg(product_description_lenght),2) AS avg_product_description_length,
+round(avg(review_score),2) AS avg_reviewscore
+from products p
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+left join order_items oi ON oi.product_id = p.product_id
+left join order_reviews ov ON ov.order_id = oi.order_id
+group by pcn.product_category_name_english
+order by avg_reviewscore DESC)
+select product_category_name_english,
+    MIN(avg_product_name_length),
+    MAX(avg_product_name_length),
+    MIN(avg_product_description_length),
+    MAX(avg_product_description_length),
+    MIN(avg_reviewscore),
+    MAX(avg_reviewscore)
+FROM x
+group by product_category_name_english
+
+
+-- avg product photos, review score by total orders --
+select pcn.product_category_name_english,
+round(avg(product_photos_qty),2) AS product_photos,
+round(avg(review_score),2) AS avg_reviewscore,
+count(Distinct oi.order_id) AS total_orders
+from products p
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+left join order_items oi ON oi.product_id = p.product_id
+left join order_reviews ov ON ov.order_id = oi.order_id
+group by pcn.product_category_name_english
+order by total_orders ASC
+
+select max(product_photos_qty) AS max_quantity,
+min(product_photos_qty) AS min_quantity
+from products p
+
+-- Average price and review score --
+SELECT
+    p.product_photos_qty,
+    AVG(oi.price) AS average_price,
+    AVG(r.review_score) AS avg_reviewscore
+FROM products p
+JOIN order_items oi
+    ON p.product_id = oi.product_id
+JOIN order_reviews r
+    ON oi.order_id = r.order_id
+WHERE p.product_photos_qty IS NOT NULL
+GROUP BY
+    p.product_photos_qty;
+
+-- average product weight, length, height and width by produt categories --
+select pcn.product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+round(avg(product_length_cm),2) AS avg_product_length_cm,
+round(avg(product_height_cm),2) AS avg_product_height_cm,
+round(avg(product_width_cm),2) AS avg_product_width_cm
+from products p
+left join product_category_name pcn 
+ON pcn.product_category_name = p.product_category_name
+group by pcn.product_category_name_english
+
+
+AVG(EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400
+)
+filter (
+    where EXTRACT(
+                EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 > 12.5)
+
+-- Average time taken to deliver the order and it's weight, length and height --
+select pcn.product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+round(avg(product_length_cm),2) AS avg_product_lengthcm,
+round(avg(product_height_cm),2) AS avg_product_heightcm,
+AVG(EXTRACT(
+            EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 ) AS Avg_timetaken_todeliver
+from products p
+left join product_category_name pcn 
+ON pcn.product_category_name = p.product_category_name
+left join order_items oi
+ON oi.product_id = p.product_id
+left join orders o
+ON o.order_id = oi.order_id
+group by pcn.product_category_name_english
+
+select max(product_weight_g)/1000 AS max, 
+min(product_weight_g) AS min
+from products p
+
+-- Average time taken to deliver the order by weight, length and height --
+select product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(product_length_cm) AS avg_product_lengthcm,
+avg(product_height_cm) AS avg_product_heightcm,
+AVG(EXTRACT(
+            EPOCH FROM (
+     o.order_delivered_customer_date - o.order_purchase_timestamp
+                )
+            ) / 86400 ) AS Avg_timetaken_todeliver
+from customers c
+left join orders o On o.customer_id = c.customer_id
+left join order_items oi ON oi.order_id = o.order_id
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pn ON 
+pn.product_category_name = p.product_category_name
+group by product_category_name_english
+
+-- average length,height,freight value and weight by average price of product_category --
+select pn.product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(product_length_cm) AS avg_product_lengthcm,
+avg(product_height_cm) AS avg_product_heightcm,
+avg(freight_value) AS average_freight_value,
+avg(freight_value) - lag(avg(freight_value)) over() AS differences_freight_value,
+avg(price) AS avg_price
+from products p
+left join order_items oi On oi.product_id = p.product_id
+left join product_category_name pn ON 
+pn.product_category_name = p.product_category_name
+group by pn.product_category_name_english
+
+-- average weight, length and height by order count for product categories --
+select pn.product_category_name_english,
+count(order_id) AS total_orders,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(product_length_cm) AS avg_product_lengthcm,
+avg(product_height_cm) AS avg_product_heightcm
+from products p
+left join order_items oi ON oi.product_id = p.product_id
+left join product_category_name pn ON 
+pn.product_category_name = p.product_category_name
+group by pn.product_category_name_english
+
+select round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(freight_value) AS average_freight_value,
+avg(price) AS avg_price
+from products p
+left join order_items oi On oi.product_id = p.product_id
+
+select pn.product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(product_length_cm) AS avg_product_lengthcm,
+avg(product_height_cm) AS avg_product_heightcm,
+avg(freight_value) AS average_freight_value,
+avg(freight_value) - lag(avg(freight_value)) over() AS differences_freight_value,
+avg(price) AS avg_price
+from products p
+left join order_items oi On oi.product_id = p.product_id
+left join orders o ON o.order_id = oi.order_id
+left join Customers c ON c.customer_id = o.customer_id
+left join product_category_name pn ON 
+pn.product_category_name = p.product_category_name
+group by pn.product_category_name_english
+
+-- total orders by seller's state --
+select seller_state,
+count(distinct seller_id) AS total_sellers,
+round(count(distinct seller_id)*100.0/ sum(count(*)) Over(),2) AS total_seller_per
+from sellers
+group by seller_state
+
+-- Total numbers of sellers by state --
+select s.seller_state,count(Distinct order_id) AS total_orders,
+round(count(Distinct order_id)*100.0/sum(count(distinct order_id)) over(),2) AS percntage_bytotal_orders
+from sellers s
+left join order_items oi ON oi.seller_id = s.seller_id
+group by s.seller_state
+
+-- count of total orders by seller's state and product categories --
+select s.seller_state,product_category_name_english,
+count(Distinct order_id) AS total_orders,
+round(count(Distinct order_id)*100.0/sum(count(distinct order_id)) over(),2) AS percntage_bytotal_orders
+from sellers s
+left join order_items oi ON oi.seller_id = s.seller_id
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by s.seller_state, product_category_name_english
+order by total_orders desc 
+limit  100
+
+-- total orders,average price, AOV, total revenue by product category --
+select product_category_name_english,
+round(sum(price)/count(Distinct order_id),2) AS AOV,
+round(AVG(price),2) AS average_price,
+round(sum(price),2) AS total_revenue,
+round(sum(price)*100.0/sum(sum(price)) over(),2) AS percntage_bytotal_reveues,
+round(count(Distinct order_id),2) AS total_orders,
+round(count(Distinct order_id)*100.0
+/sum(count(Distinct order_id)) over(),2) AS percntage_bytotal_orders
+from order_items oi
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english
+order by total_revenue desc
+
+select seller_state,
+count(distinct seller_id) AS total_sellers,
+round(count(distinct seller_id)*100.0/ sum(count(*)) Over(),2) AS total_seller_per
+from sellers 
+group by seller_state
+
+
+
+select product_category_name_english,
+round(avg(product_weight_g)/1000,2) AS avg_product_weight,
+avg(product_length_cm) AS avg_product_lengthcm,
+avg(product_height_cm) AS avg_product_heightcm,
+AVG(EXTRACT(
+            EPOCH FROM (
+     o.order_approved_at - o.order_purchase_timestamp
+                )
+            ) / 3600 ) AS Avg_timetaken_toapprove
+from customers c
+left join orders o On o.customer_id = c.customer_id
+left join order_items oi ON oi.order_id = o.order_id
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pn ON 
+pn.product_category_name = p.product_category_name
+group by product_category_name_english
+
+-- average order item and total oders by product category --
+select product_category_name_english,
+round(avg(order_item_id),2) AS average_basket_size, 
+count(distinct order_id) AS total_orders
+from order_items oi
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english
+
+-- Basket size segment by product categories -- 
+WITH order_category_basket AS (
+    SELECT
+        oi.order_id,
+        pcn.product_category_name_english,
+        COUNT(*) AS items_in_order
+    FROM order_items oi
+    LEFT JOIN products p
+        ON p.product_id = oi.product_id
+    left join product_category_name pcn 
+    ON pcn.product_category_name = p.product_category_name
+    GROUP BY
+        oi.order_id,
+        pcn.product_category_name_english
+)
+SELECT
+product_category_name_english,
+ROUND(AVG(items_in_order), 2) AS average_basket_size,
+COUNT(*) AS total_orders,
+COUNT(*) FILTER (
+WHERE items_in_order = 1
+    ) AS one_item_orders,
+COUNT(*) FILTER (
+WHERE items_in_order = 2) AS two_item_orders,
+COUNT(*) FILTER (
+        WHERE items_in_order = 3
+    ) AS three_item_orders,
+COUNT(*) FILTER (
+        WHERE items_in_order >= 4
+    ) AS four_plus_item_orders,
+
+    ROUND(
+        COUNT(*) FILTER (WHERE items_in_order = 1) * 100.0
+        / NULLIF(COUNT(*), 0),
+        2
+    ) AS one_item_order_pct,
+
+    ROUND(
+        COUNT(*) FILTER (WHERE items_in_order >= 2) * 100.0
+        / NULLIF(COUNT(*), 0),
+        2
+    ) AS multi_item_order_pct
+FROM order_category_basket
+GROUP BY product_category_name_english
+ORDER BY total_orders DESC;
+
+select Distinct customer_unique_id
+from Customers
+
+-- total customer by total number of orders --
+WITH customer_orders AS (
+    SELECT
+        c.customer_unique_id,
+        COUNT(DISTINCT o.order_id) AS total_orders
+    FROM customers c
+    JOIN orders o
+        ON o.customer_id = c.customer_id
+    GROUP BY c.customer_unique_id
+)
+SELECT
+    total_orders,
+    COUNT(*) AS total_customers,
+    ROUND(
+        COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (),
+        2
+    ) AS customer_percentage
+FROM customer_orders
+GROUP BY total_orders
+ORDER BY total_orders;
+
+-- Segement for total order of customers --
+WITH customer_orders AS (
+    SELECT product_category_name_english,
+        c.customer_unique_id,
+        COUNT(DISTINCT o.order_id) AS total_orders
+    FROM customers c
+    JOIN orders o
+        ON o.customer_id = c.customer_id
+    LEFT JOIN order_items oi
+    ON oi.order_id = o.order_id
+    left join products p
+    ON p.product_id = oi.product_id
+    left join product_category_name pcn
+    ON pcn.product_category_name = p.product_category_name
+    GROUP BY c.customer_unique_id,
+    product_category_name_english
+     )
+select product_category_name_english,
+count(*) 
+filter(where total_orders > 1 ) AS total_orders_morethanone,
+Avg(total_orders)
+filter(where total_orders > 1) AS average_of_order_morehtanone,
+sum(total_orders)
+filter(where total_orders > 1 ) AS sum_of_totalorder_morethan1
+from customer_orders
+group by product_category_name_english
+order by sum_of_totalorder_morethan1 desc
+
+select customer_state,
+count(distinct customer_id) AS total_customers
+from customers
+group by customer_state
+
+-- total number of orders by year --
+WITH x AS (select
+EXTRACT(
+            Year FROM (
+     order_purchase_timestamp
+                )
+            ) AS purchase_year,
+count(distinct order_id) AS total_orders
+from  orders
+group by order_purchase_timestamp)
+select purchase_year,sum(total_orders) AS total_orders
+from x
+group by purchase_year
+
+-- total number of orders by month --
+WITH x AS (select
+DATE_TRUNC('month', order_purchase_timestamp)
+ AS purchase_month,
+count(distinct order_id) AS total_orders
+from  orders
+group by DATE_TRUNC('month', order_purchase_timestamp)
+)
+select purchase_month,
+sum(total_orders) AS total_orders,
+round(
+    sum(total_orders)*100.0
+/ SUM(SUM(total_orders)) over(),2) AS percentag,
+sum(total_orders) - lag(sum(total_orders)) over() AS differences
+from x
+group by purchase_month
+order by purchase_month
+
+-- mom changes by total orders --
+WITH monthly_orders AS (
+    SELECT
+        DATE_TRUNC('month', order_purchase_timestamp) AS purchase_month,
+        COUNT(DISTINCT order_id) AS total_orders
+    FROM orders
+    GROUP BY DATE_TRUNC('month', order_purchase_timestamp)
+),
+monthly_comparison AS (
+    SELECT
+        purchase_month,
+        total_orders,
+        LAG(total_orders) OVER (
+            ORDER BY purchase_month
+        ) AS previous_month_orders
+    FROM monthly_orders
+)
+SELECT
+    purchase_month,
+    total_orders,
+    total_orders - previous_month_orders AS order_difference,
+    ROUND(
+        (total_orders - previous_month_orders) * 100.0
+        / NULLIF(previous_month_orders, 0),
+        2
+    ) AS mom_growth_pct
+FROM monthly_comparison
+ORDER BY purchase_month;
+
+WITH monthly_orders AS (
+    SELECT
+        DATE_TRUNC('month', order_purchase_timestamp) AS purchase_month,
+        COUNT(DISTINCT order_id) AS total_orders
+    FROM orders
+    GROUP BY DATE_TRUNC('month', order_purchase_timestamp) )
+select 
+avg(total_orders) AS avg_total_orders
+from monthly_orders
+
+-- total_orders by month , difference, mom and yoy --
+with x AS (
+    select EXTRACT(MONTH from order_purchase_timestamp ) AS purchase_month,
+count(distinct order_id)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2018) AS total_orders_2018,
+count(distinct order_id)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2017) AS total_orders_2017,
+count(distinct order_id)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2016) AS total_orders_2016
+from orders
+group by EXTRACT(MONTH from order_purchase_timestamp ) )
+select purchase_month,
+sum(total_orders_2018 ) - sum(total_orders_2017) AS differences,
+round(sum(total_orders_2018 ) - sum(total_orders_2017),2)*100.0 / sum(total_orders_2017) AS difference_by_percentage
+from x
+group by purchase_month
+
+-- total_AOV by month , difference, mom and yoy --
+with x AS (
+    select EXTRACT(MONTH from order_purchase_timestamp ) AS purchase_month,
+COALESCE(sum(price)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2018))
+/ NULLIF(count(distinct o.order_id)
+filter(where
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2018),2) AS AOV_2018,
+
+COALESCE(sum(price)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2017)) 
+/ NULLIF(count(distinct o.order_id)
+filter(where
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2017),0) AS AOV_2017,
+
+COALESCE(sum(price)
+filter(where 
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2016))
+/ NULLIF(count(distinct o.order_id)
+filter(where
+EXTRACT
+(YEAR from order_purchase_timestamp) = 2016),0 )AS AOV_2016
+from orders o
+Left join order_items oi ON oi.order_id = o.order_id
+group by EXTRACT(MONTH from order_purchase_timestamp )
+order by purchase_month )
+select purchase_month,
+sum(AOV_2018 ) - sum(AOV_2017) AS differences,
+round(sum(AOV_2018 ) - sum(AOV_2017),2)*100.0 / sum(AOV_2017) AS difference_by_percentage
+from x
+group by purchase_month
+
+select product_category_name_english,
+count(distinct p.product_id) AS total_products,
+count(distinct p.product_id)*100.0 /
+sum(count(distinct p.product_id)) over() AS total_orders_percentage
+from order_items oi
+left join products p ON p.product_id = oi.product_id
+left join product_category_name pcn ON pcn.product_category_name = p.product_category_name
+group by product_category_name_english
+order by total_products
+
+select count(distinct product_id) AS total_orders
+from order_items oi
+
+-- RFM ANALYSIS  --
+Create VIEW x AS 
+WITH order_revenue AS (
+    SELECT
+        order_id,
+        SUM(price) AS order_revenue
+    FROM order_items
+    GROUP BY order_id
+),
+
+completed_orders AS (
+    SELECT
+        o.order_id,
+        c.customer_unique_id,
+        o.order_purchase_timestamp::date AS order_date,
+        COALESCE(r.order_revenue, 0) AS order_revenue
+    FROM orders o
+    JOIN customers c
+        ON o.customer_id = c.customer_id
+    LEFT JOIN order_revenue r
+        ON o.order_id = r.order_id
+    WHERE o.order_status = 'delivered'
+      AND o.order_purchase_timestamp IS NOT NULL
+),
+
+reference_date AS (
+    SELECT MAX(order_date) + 1 AS ref_date
+    FROM completed_orders
+),
+
+customer_rfm AS (
+    SELECT
+        co.customer_unique_id,
+        MAX(co.order_date) AS last_purchase_date,
+
+        (rd.ref_date - MAX(co.order_date))
+            AS recency_days,
+
+        COUNT(DISTINCT co.order_id)
+            AS frequency,
+
+        SUM(co.order_revenue)
+            AS monetary
+
+    FROM completed_orders co
+    CROSS JOIN reference_date rd
+    GROUP BY
+        co.customer_unique_id,
+        rd.ref_date
+),
+
+percentiles AS (
+    SELECT
+        *,
+        PERCENT_RANK() OVER (
+            ORDER BY recency_days DESC
+        ) AS r_pct,
+
+        PERCENT_RANK() OVER (
+            ORDER BY frequency ASC
+        ) AS f_pct,
+
+        PERCENT_RANK() OVER (
+            ORDER BY monetary ASC
+        ) AS m_pct
+
+    FROM customer_rfm
+),
+
+rfm_scores AS (
+    SELECT
+        customer_unique_id,
+        last_purchase_date,
+        recency_days,
+        frequency,
+        ROUND(monetary::numeric, 2) AS monetary,
+
+        CASE
+            WHEN r_pct < 0.2 THEN 1
+            WHEN r_pct < 0.4 THEN 2
+            WHEN r_pct < 0.6 THEN 3
+            WHEN r_pct < 0.8 THEN 4
+            ELSE 5
+        END AS R_score,
+
+        CASE
+            WHEN f_pct < 0.2 THEN 1
+            WHEN f_pct < 0.4 THEN 2
+            WHEN f_pct < 0.6 THEN 3
+            WHEN f_pct < 0.8 THEN 4
+            ELSE 5
+        END AS F_score,
+
+        CASE
+            WHEN m_pct < 0.2 THEN 1
+            WHEN m_pct < 0.4 THEN 2
+            WHEN m_pct < 0.6 THEN 3
+            WHEN m_pct < 0.8 THEN 4
+            ELSE 5
+        END AS M_score
+
+    FROM percentiles
+)
+
+SELECT *
+FROM rfm_scores
+ORDER BY R_score DESC, F_score DESC, M_score DESC;
+
+select AVG(recency_days) AS Avg_recency_days,
+avg(frequency) AS avg_frequency,
+avg(monetary) AS avg_monetary_value,
+avg(r_score) AS avg_r_score,
+avg(m_score) AS avg_m_score,
+avg(f_score) AS avg_f_score
+from x
+
+select review_comment_title
+from order_reviews
+where review_comment_title IS NOT NULL
+
+select review_comment_title, review_comment_message,review_score
+from order_reviews
+where review_comment_message IS NOT NULL
+
+
+-- Segment to know percentage of review ratings --
+with x AS (select 
+CASE 
+when review_score between 4.0 AND 5.0 then 'between_4and5'
+when  review_score between 3.0 AND 3.999 then 'between_3and4'
+when review_score between 2.0 AND 2.999  then 'between_2and3'
+when review_score between 1.0 AND 1.999  then 'between_1and2'
+when review_score < 1  then 'below_than1'
+END AS segment_review_ratings
+from order_reviews)
+select segment_review_ratings,
+count(segment_review_ratings) AS total_ratings,
+count(segment_review_ratings)*100.0/sum(count(segment_review_ratings)) over() AS percentage_total_ratings
+from x 
+group by segment_review_ratings
+
+DROP VIEW IF EXISTS vw_order_review_labeled
+CREATE OR REPLACE VIEW vw_order_review_labeled AS
+WITH normalized AS (
+    SELECT
+        r.review_id,
+        r.order_id,
+        r.review_score,
+        r.review_comment_title,
+        r.review_comment_message,
+        r.review_creation_date,
+        r.review_answer_timestamp,
+        LOWER(
+            COALESCE(r.review_comment_title,   '') || ' ' ||
+            COALESCE(r.review_comment_message, '')
+        ) AS txt_lower,
+        (NULLIF(BTRIM(r.review_comment_title),   '') IS NOT NULL) AS has_title,
+        (NULLIF(BTRIM(r.review_comment_message), '') IS NOT NULL) AS has_message,
+        LENGTH(NULLIF(BTRIM(r.review_comment_message), ''))        AS message_length,
+        /* Compact normalized string used only for exact-match short reviews */
+        TRIM(LOWER(
+            COALESCE(r.review_comment_title,   '') || ' ' ||
+            COALESCE(r.review_comment_message, '')
+        )) AS txt_exact
+    FROM order_reviews r
+)
+SELECT
+    review_id,
+    order_id,
+    review_score,
+    review_comment_title,
+    review_comment_message,
+    review_creation_date,
+    review_answer_timestamp,
+    has_title,
+    has_message,
+    message_length,
+    txt_lower,
+    txt_exact,
+
+    CASE
+        WHEN review_score <= 2 THEN 'negative'
+        WHEN review_score  = 3 THEN 'neutral_or_mixed'
+        ELSE                        'positive'
+    END AS score_sentiment,
+
+    CASE
+        /* 0. Empty review - cannot be labeled by keywords */
+        WHEN NOT has_title AND NOT has_message
+            THEN 'no_text'
+
+        /* 1. Non-delivery */
+        WHEN txt_lower LIKE '%não recebi%' OR txt_lower LIKE '%nao recebi%'
+          OR txt_lower LIKE '%ainda não recebi%' OR txt_lower LIKE '%ainda nao recebi%'
+          OR txt_lower LIKE '%não chegou%' OR txt_lower LIKE '%nao chegou%'
+          OR txt_lower LIKE '%nunca chegou%' OR txt_lower LIKE '%nunca recebi%'
+          OR txt_lower LIKE '%não foi entregue%' OR txt_lower LIKE '%nao foi entregue%'
+          OR txt_lower LIKE '%não recebemos%' OR txt_lower LIKE '%nao recebemos%'
+          OR txt_lower LIKE '%extraviado%' OR txt_lower LIKE '%extravio%'
+          OR txt_lower LIKE '%consta como entregue%'
+            THEN 'non_delivery'
+
+        /* 2. Negative recommendation - BEFORE positive "recomendo" */
+        WHEN txt_lower LIKE '%não recomendo%' OR txt_lower LIKE '%nao recomendo%'
+          OR txt_lower LIKE '%não recomendaria%' OR txt_lower LIKE '%nao recomendaria%'
+          OR txt_lower LIKE '%nunca mais compro%'
+          OR txt_lower LIKE '%não compro mais%' OR txt_lower LIKE '%nao compro mais%'
+          OR txt_lower LIKE '%não compraria%' OR txt_lower LIKE '%nao compraria%'
+            THEN 'negative_recommendation'
+
+        /* 3. Wrong / fake product */
+        WHEN txt_lower LIKE '%produto errado%' OR txt_lower LIKE '%produto diferente%'
+          OR txt_lower LIKE '%veio outro%' OR txt_lower LIKE '%veio errado%'
+          OR txt_lower LIKE '%veio diferente%'
+          OR txt_lower LIKE '%não corresponde%' OR txt_lower LIKE '%nao corresponde%'
+          OR txt_lower LIKE '%modelo errado%' OR txt_lower LIKE '%cor errada%'
+          OR txt_lower LIKE '%cor diferente%' OR txt_lower LIKE '%tamanho errado%'
+          OR txt_lower LIKE '%tamanho diferente%'
+          OR txt_lower LIKE '%falso%' OR txt_lower LIKE '%falsificado%'
+          OR txt_lower LIKE '%réplica%' OR txt_lower LIKE '%replica%'
+          OR txt_lower LIKE '%pirata%'
+            THEN 'wrong_or_fake_product'
+
+        /* 4. Defect / damage */
+        WHEN txt_lower LIKE '%defeito%' OR txt_lower LIKE '%quebrado%'
+          OR txt_lower LIKE '%quebrada%' OR txt_lower LIKE '%danificado%'
+          OR txt_lower LIKE '%danificada%' OR txt_lower LIKE '%amassado%'
+          OR txt_lower LIKE '%amassada%'
+          OR txt_lower LIKE '%não funciona%' OR txt_lower LIKE '%nao funciona%'
+          OR txt_lower LIKE '%vazando%' OR txt_lower LIKE '%riscado%'
+          OR txt_lower LIKE '%trincado%'
+            THEN 'defect_or_damage'
+
+        /* 5. Missing item */
+        WHEN txt_lower LIKE '%faltou%' OR txt_lower LIKE '%faltando%'
+          OR txt_lower LIKE '%faltam%' OR txt_lower LIKE '%incompleto%'
+          OR txt_lower LIKE '%só veio um%' OR txt_lower LIKE '%so veio um%'
+          OR txt_lower LIKE '%recebi apenas%' OR txt_lower LIKE '%recebi somente%'
+          OR txt_lower LIKE '%somente um%' OR txt_lower LIKE '%veio faltando%'
+          OR txt_lower LIKE '%faltaram%'
+            THEN 'missing_item'
+
+        /* 6. Late delivery */
+        WHEN txt_lower LIKE '%atraso%' OR txt_lower LIKE '%atrasou%'
+          OR txt_lower LIKE '%atrasado%' OR txt_lower LIKE '%atrasada%'
+          OR txt_lower LIKE '%demora%' OR txt_lower LIKE '%demorou%'
+          OR txt_lower LIKE '%fora do prazo%' OR txt_lower LIKE '%passou do prazo%'
+          OR txt_lower LIKE '%prazo não cumprido%' OR txt_lower LIKE '%prazo nao cumprido%'
+            THEN 'late_delivery'
+
+        /* 7. Fast / on-time delivery */
+        WHEN txt_lower LIKE '%antes do prazo%' OR txt_lower LIKE '%no prazo%'
+          OR txt_lower LIKE '%entrega rápida%' OR txt_lower LIKE '%entrega rapida%'
+          OR txt_lower LIKE '%chegou rápido%' OR txt_lower LIKE '%chegou rapido%'
+          OR txt_lower LIKE '%chegou antes%' OR txt_lower LIKE '%entregue antes%'
+          OR txt_lower LIKE '%antecedência%' OR txt_lower LIKE '%antecedencia%'
+            THEN 'fast_delivery'
+
+        /* 8. Generic negative - BEFORE positive */
+        WHEN txt_lower LIKE '%não gostei%' OR txt_lower LIKE '%nao gostei%'
+          OR txt_lower LIKE '%detestei%'
+          OR txt_lower LIKE '%péssimo%' OR txt_lower LIKE '%pessimo%'
+          OR txt_lower LIKE '%horrível%' OR txt_lower LIKE '%horrivel%'
+          OR txt_lower LIKE '%ruim%' OR txt_lower LIKE '%arrependi%'
+          OR txt_lower LIKE '%decepcionad%' OR txt_lower LIKE '%insatisfeit%'
+            THEN 'negative_generic'
+
+        /* 9. Quality-specific */
+        WHEN txt_lower LIKE '%qualidade%'
+         AND (txt_lower LIKE '%ruim%' OR txt_lower LIKE '%baixa%'
+           OR txt_lower LIKE '%péssima%' OR txt_lower LIKE '%pessima%'
+           OR txt_lower LIKE '%fraca%')
+            THEN 'poor_quality'
+        WHEN txt_lower LIKE '%qualidade%'
+         AND (txt_lower LIKE '%boa%' OR txt_lower LIKE '%ótima%'
+           OR txt_lower LIKE '%otima%' OR txt_lower LIKE '%excelente%')
+            THEN 'good_quality'
+
+        /* 10. Return / refund / cancel intent */
+        WHEN txt_lower LIKE '%devolução%' OR txt_lower LIKE '%devolucao%'
+          OR txt_lower LIKE '%devolver%' OR txt_lower LIKE '%estorno%'
+          OR txt_lower LIKE '%reembolso%' OR txt_lower LIKE '%cancelamento%'
+          OR txt_lower LIKE '%cancelar%'
+            THEN 'return_refund_cancel'
+
+        /* 11. Customer service */
+        WHEN txt_lower LIKE '%atendimento%'
+          OR txt_lower LIKE '%sac %' OR txt_lower LIKE '%sac,%' OR txt_lower LIKE '%sac.%'
+          OR txt_lower LIKE '%suporte%'
+          OR txt_lower LIKE '%não respondem%' OR txt_lower LIKE '%nao respondem%'
+          OR txt_lower LIKE '%ninguém responde%' OR txt_lower LIKE '%ninguem responde%'
+          OR txt_lower LIKE '%sem resposta%' OR txt_lower LIKE '%sem retorno%'
+            THEN 'customer_service'
+
+        /* 12. Freight / price */
+        WHEN txt_lower LIKE '%frete caro%' OR txt_lower LIKE '%frete alto%'
+          OR txt_lower LIKE '%frete muito caro%' OR txt_lower LIKE '%frete abusivo%'
+          OR txt_lower LIKE '%frete elevado%'
+            THEN 'expensive_freight'
+        WHEN txt_lower LIKE '%preço bom%' OR txt_lower LIKE '%preco bom%'
+          OR txt_lower LIKE '%bom preço%' OR txt_lower LIKE '%bom preco%'
+          OR txt_lower LIKE '%custo benefício%' OR txt_lower LIKE '%custo beneficio%'
+            THEN 'good_price'
+
+        /* 13. Packaging */
+        WHEN txt_lower LIKE '%embalagem%'
+         AND (txt_lower LIKE '%amassada%' OR txt_lower LIKE '%rasgada%'
+           OR txt_lower LIKE '%violada%' OR txt_lower LIKE '%danificada%'
+           OR txt_lower LIKE '%mal embalad%')
+            THEN 'bad_packaging'
+        WHEN txt_lower LIKE '%bem embalad%' OR txt_lower LIKE '%bem acondicionad%'
+            THEN 'good_packaging'
+
+        /* 14. Positive recommendation - AFTER negative */
+        WHEN txt_lower LIKE '%recomendo%' OR txt_lower LIKE '%indico%'
+          OR txt_lower LIKE '%super recomendo%'
+          OR txt_lower LIKE '%nota 10%' OR txt_lower LIKE '%nota dez%'
+            THEN 'positive_recommendation'
+
+        /* 15. Exact-match short generics (cheap, catches "Bom", "Ok", "Top", etc.) */
+        WHEN txt_exact IN (
+            'bom','boa','muito bom','muito boa','ok','ótimo','otimo','otima','ótima',
+            'excelente','perfeito','perfeita','maravilhoso','maravilhosa','lindo','linda',
+            'top','show','legal','bacana','valeu','blz','beleza','sim','sim!','amei',
+            'gostei','gostei muito','muito bom mesmo','10','nota 10','nota dez',
+            'satisfeito','satisfeita','tudo certo','tudo ok','tudo bom','recomendo',
+            'super recomendo','recomendo!','muito boa mesmo'
+        ) THEN 'positive_generic'
+
+        WHEN txt_exact IN (
+            'ruim','péssimo','pessimo','horrível','horrivel','não gostei','nao gostei',
+            'detestei','1','2','3','não recomendo','nao recomendo','não','nao',
+            'nenhuma','n','nao!','não!'
+        ) THEN 'negative_generic'
+
+        /* 16. Broad positive fallback (after all negatives) */
+        WHEN txt_lower LIKE '%muito bom%' OR txt_lower LIKE '%muito boa%'
+          OR txt_lower LIKE '%bom produto%' OR txt_lower LIKE '%boa qualidade%'
+          OR txt_lower LIKE '%ótimo%' OR txt_lower LIKE '%otimo%'
+          OR txt_lower LIKE '%excelente%' OR txt_lower LIKE '%maravilhos%'
+          OR txt_lower LIKE '%perfeito%' OR txt_lower LIKE '%perfeita%'
+          OR txt_lower LIKE '%amei%' OR txt_lower LIKE '%gostei%'
+          OR txt_lower LIKE '%lindo%' OR txt_lower LIKE '%linda%'
+            THEN 'positive_generic'
+
+        ELSE 'other'
+    END AS text_category,
+
+    (txt_lower LIKE '%lannister%')  AS mentions_lannister,
+    (txt_lower LIKE '%targaryen%')  AS mentions_targaryen,
+    (txt_lower LIKE '%stark%')      AS mentions_stark,
+    (txt_lower LIKE '%baratheon%')  AS mentions_baratheon,
+    (txt_lower LIKE '%correios%')   AS mentions_correios
+FROM normalized;
+
+select * 
+from vw_order_review_labeled
+
+select text_category,
+avg(oe.review_score) AS avg_review_score,
+count(text_category)
+filter(where score_sentiment = 'negative') AS reviews_negative,
+count(text_category)
+filter(where score_sentiment = 'neutral_or_mixed') AS reviews_neutral_or_mixed,
+count(text_category)
+filter(where score_sentiment = 'positive') AS reviews_positive
+from vw_order_review_labeled ol
+left join order_reviews oe ON oe.order_id = ol.order_id
+group by text_category
+
+CREATE OR REPLACE VIEW review_analysis_base AS
+WITH item_metrics AS (
+    SELECT
+        order_id,
+        COUNT(*) AS item_count,
+        COUNT(DISTINCT product_id) AS distinct_products,
+        SUM(price) AS product_revenue,
+        SUM(freight_value) AS freight_value,
+        AVG(price) AS avg_item_price
+    FROM order_items
+    GROUP BY order_id
+),
+
+payment_metrics AS (
+    SELECT
+        order_id,
+        SUM(payment_value) AS total_payment_value,
+        MAX(payment_installments) AS max_installments
+    FROM order_payments
+    GROUP BY order_id
+)
+
+SELECT
+    rc.review_id,
+    rc.order_id,
+    rc.review_score,
+    rc.text_category,
+    rc.score_sentiment,
+
+    o.order_status,
+    o.order_purchase_timestamp,
+    o.order_approved_at,
+    o.order_delivered_carrier_date,
+    o.order_delivered_customer_date,
+    o.order_estimated_delivery_date,
+
+    c.customer_state,
+
+    im.item_count,
+    im.distinct_products,
+    im.product_revenue,
+    im.freight_value,
+    im.avg_item_price,
+
+    pm.total_payment_value,
+    pm.max_installments,
+
+    EXTRACT(EPOCH FROM (
+        o.order_approved_at - o.order_purchase_timestamp
+    )) / 3600.0 AS approval_hours,
+
+    EXTRACT(EPOCH FROM (
+        o.order_delivered_carrier_date - o.order_approved_at
+    )) / 3600.0 AS approval_to_carrier_hours,
+
+    EXTRACT(EPOCH FROM (
+        o.order_delivered_customer_date
+        - o.order_delivered_carrier_date
+    )) / 86400.0 AS carrier_to_customer_days,
+
+    EXTRACT(EPOCH FROM (
+        o.order_delivered_customer_date
+        - o.order_purchase_timestamp
+    )) / 86400.0 AS total_delivery_days,
+
+    EXTRACT(EPOCH FROM (
+        o.order_delivered_customer_date
+        - o.order_estimated_delivery_date
+    )) / 86400.0 AS delay_days
+
+FROM vw_order_review_labeled rc
+JOIN orders o
+    ON rc.order_id = o.order_id
+LEFT JOIN customers c
+    ON o.customer_id = c.customer_id
+LEFT JOIN item_metrics im
+    ON o.order_id = im.order_id
+LEFT JOIN payment_metrics pm
+    ON o.order_id = pm.order_id;
+
+
+-- which text tags are associated with the lowest ratings --
+WITH baseline AS (
+    SELECT AVG(review_score::numeric) AS overall_avg_score
+    FROM review_analysis_base
+    WHERE review_score BETWEEN 1 AND 5
+)
+
+SELECT
+    b.text_category,
+    COUNT(*) AS review_count,
+
+    ROUND(AVG(b.review_score::numeric), 3)
+        AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE b.review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE b.review_score = 5
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS five_star_pct,
+
+    ROUND(
+        AVG(b.review_score::numeric) - MAX(bl.overall_avg_score),
+        3
+    ) AS difference_from_baseline
+FROM review_analysis_base b
+CROSS JOIN baseline bl
+WHERE b.text_category <> 'no_text'
+GROUP BY b.text_category
+HAVING COUNT(*) >= 30
+ORDER BY avg_review_score ASC;
+
+-- does delivery delays correlate with review scores ?--
+SELECT
+    COUNT(*) AS delivered_reviews,
+ ROUND(
+        corr(
+            review_score::double precision,
+            delay_days::double precision
+        )::numeric,
+        4
+    ) AS correlation_delay_vs_score,
+
+    ROUND(AVG(review_score::numeric), 3)
+        AS overall_avg_score,
+
+    ROUND(AVG(delay_days::numeric), 2)
+        AS avg_delay_days
+
+FROM review_analysis_base
+WHERE order_status = 'delivered'
+  AND review_score BETWEEN 1 AND 5
+  AND delay_days IS NOT NULL;
+
+-- review scores of the late delivery orders --
+SELECT
+    CASE
+        WHEN delay_days <= 0 THEN 'On time or early'
+        WHEN delay_days <= 3 THEN '1-3 days late'
+        WHEN delay_days <= 7 THEN '4-7 days late'
+        ELSE 'More than 7 days late'
+        END AS delay_category,
+
+    COUNT(*) AS reviews,
+    ROUND(AVG(review_score::numeric), 3) AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE text_category = 'late_delivery'
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS late_delivery_tag_pct
+
+FROM review_analysis_base
+WHERE order_status = 'delivered'
+  AND delay_days IS NOT NULL
+  AND review_score BETWEEN 1 AND 5
+GROUP BY 1
+
+
+-- product category is associated with low ratings ? --
+WITH order_category AS (
+    SELECT DISTINCT
+        oi.order_id,
+        COALESCE(
+            pct.product_category_name_english,
+            p.product_category_name
+        ) AS category
+    FROM order_items oi
+    JOIN products p
+        ON oi.product_id = p.product_id
+    LEFT JOIN product_category_name pct
+        ON p.product_category_name =
+           pct.product_category_name
+)
+SELECT
+    oc.category,
+    COUNT(*) AS reviews,
+
+    ROUND(AVG(b.review_score::numeric), 3)
+        AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE b.review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE b.text_category IN (
+                'defect_or_damage',
+                'poor_quality',
+                'wrong_or_fake_product',
+                'missing_item'
+            )
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS product_issue_tag_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE b.text_category IN (
+                'late_delivery',
+                'non_delivery'
+            )
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS delivery_issue_tag_pct
+
+FROM review_analysis_base b
+JOIN order_category oc
+    ON b.order_id = oc.order_id
+WHERE b.review_score BETWEEN 1 AND 5
+  AND oc.category IS NOT NULL
+GROUP BY oc.category
+HAVING COUNT(*) >= 100
+ORDER BY low_rating_pct DESC;
+
+-- Testing freight burden against review scores--
+WITH freight_analysis AS (
+    SELECT
+        review_id,
+        order_id,
+        review_score,
+        freight_value,
+        product_revenue,
+
+        freight_value / NULLIF(product_revenue, 0)
+            AS freight_to_revenue_ratio
+
+    FROM review_analysis_base
+    WHERE review_score BETWEEN 1 AND 5
+      AND freight_value IS NOT NULL
+      AND product_revenue > 0
+)SELECT
+    COUNT(*) AS reviews,
+ROUND(
+        corr(
+            review_score::double precision,
+            freight_to_revenue_ratio::double precision
+        )::numeric,
+        4
+    ) AS freight_ratio_vs_rating_corr,
+ROUND(AVG(review_score::numeric), 3)
+        AS avg_review_score,
+ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct
+FROM freight_analysis;
+
+
+-- Testing freight burden against review scores--
+WITH freight_analysis AS (
+    SELECT
+        review_score,
+        freight_value / NULLIF(product_revenue, 0)
+            AS freight_ratio
+    FROM review_analysis_base
+    WHERE review_score BETWEEN 1 AND 5
+      AND product_revenue > 0
+      AND freight_value IS NOT NULL
+)SELECT
+    CASE
+        WHEN freight_ratio < 0.05 THEN 'Under 5%'
+        WHEN freight_ratio < 0.10 THEN '5-10%'
+        WHEN freight_ratio < 0.20 THEN '10-20%'
+        WHEN freight_ratio < 0.30 THEN '20-30%'
+        ELSE '30% or more'
+    END AS freight_ratio_group,
+
+    COUNT(*) AS reviews,
+    ROUND(AVG(review_score::numeric), 3)
+        AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct
+
+FROM freight_analysis
+GROUP BY 1
+
+-- Testing payment approval delay against review scores --
+SELECT
+    CASE
+        WHEN approval_hours IS NULL THEN 'Missing approval time'
+        WHEN approval_hours < 5 THEN 'Under 5 hours'
+        WHEN approval_hours < 10 THEN '5-10 hours'
+        WHEN approval_hours < 25 THEN '10-25 hours'
+        WHEN approval_hours < 50 THEN '25-50 hours'
+        ELSE '50+ hours'
+    END AS approval_delay_group,
+
+    COUNT(*) AS reviews,
+    ROUND(AVG(review_score::numeric), 3)
+        AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct
+
+FROM review_analysis_base
+WHERE review_score BETWEEN 1 AND 5
+GROUP BY 1
+
+
+-- comparing tags against operational metrics --
+SELECT
+    text_category,
+    COUNT(*) AS reviews,
+ROUND(AVG(review_score::numeric), 3)
+        AS avg_review_score,
+ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct,
+ROUND(
+        (AVG(delay_days::numeric)
+            FILTER (WHERE order_status = 'delivered')),
+        2
+    ) AS avg_delivery_delay_days,
+ROUND(
+        (AVG(total_delivery_days::numeric)
+            FILTER (WHERE order_status = 'delivered')),
+        2
+    ) AS avg_total_delivery_days,
+ROUND(
+        AVG(
+            (freight_value / NULLIF(product_revenue, 0))::numeric
+        ),
+        3
+    ) AS avg_freight_ratio,
+ROUND(AVG(approval_hours::numeric), 2)
+        AS avg_approval_hours
+FROM review_analysis_base
+WHERE review_score BETWEEN 1 AND 5
+  AND text_category <> 'no_text'
+GROUP BY text_category
+HAVING COUNT(*) >= 30
+ORDER BY avg_review_score ASC;
+
+
+-- low ratings are concentrated in particular customer destinations ? --
+SELECT
+    customer_state,
+    COUNT(*) AS reviews,
+
+    ROUND(AVG(review_score::numeric), 3)
+        AS avg_review_score,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE review_score <= 2
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS low_rating_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE text_category IN (
+                'late_delivery',
+                'non_delivery'
+            )
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS delivery_issue_tag_pct,
+
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE text_category IN (
+                'defect_or_damage',
+                'poor_quality',
+                'wrong_or_fake_product',
+                'missing_item'
+            )
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS product_issue_tag_pct
+FROM review_analysis_base
+WHERE review_score BETWEEN 1 AND 5
+  AND customer_state IS NOT NULL
+GROUP BY customer_state
+HAVING COUNT(*) >= 100
+ORDER BY low_rating_pct DESC;
+
+
+`
